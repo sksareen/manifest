@@ -77,7 +77,8 @@ async def create_generation(background_tasks: BackgroundTasks, file: UploadFile 
             DB[gen_id].status = "processing"
             DB[gen_id].updated_at = datetime.utcnow()
             provider_token = os.getenv("REPLICATE_API_TOKEN")
-            provider = ReplicateVideoProvider(api_token=provider_token)
+            video_model = os.getenv("REPLICATE_MODEL_VIDEO", "bytedance/seedance-1-lite")
+            provider = ReplicateVideoProvider(api_token=provider_token, model=video_model)
             enhanced_prompt = enhance_prompt(prompt)
             video_url = provider.generate(image_path, enhanced_prompt)
             DB[gen_id].status = "succeeded"

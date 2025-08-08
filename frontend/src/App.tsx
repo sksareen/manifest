@@ -18,6 +18,7 @@ function App() {
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [dragActive, setDragActive] = useState(false)
+  const [isDarkMode, setIsDarkMode] = useState(true)
   const pollRef = useRef<number | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -81,6 +82,12 @@ function App() {
     setError(null)
   }
 
+  const toggleTheme = () => {
+    const newMode = !isDarkMode
+    setIsDarkMode(newMode)
+    document.documentElement.setAttribute('data-theme', newMode ? 'dark' : 'light')
+  }
+
   const submit = async () => {
     if (!file || !prompt.trim()) {
       setError('Upload a selfie and enter a prompt')
@@ -139,8 +146,13 @@ function App() {
     }
   }, [previewUrl])
 
+  // Initialize theme
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', isDarkMode ? 'dark' : 'light')
+  }, [])
+
   return (
-    <div className="app-container">
+    <div data-theme={isDarkMode ? 'dark' : 'light'}>
       <header className="main-header">
         <div className="header-content">
           <h1 className="header-logo">Manifest AI</h1>
@@ -151,25 +163,22 @@ function App() {
               aria-label="New video"
               disabled={!file && !job}
             >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M12 5v14M5 12h14"/>
-              </svg>
+              <i className="fas fa-plus"></i>
             </button>
-            <button type="button" className="theme-toggle" aria-label="Toggle theme">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-              </svg>
+            <button 
+              type="button" 
+              className="theme-toggle" 
+              onClick={toggleTheme}
+              aria-label="Toggle theme"
+            >
+              <i className={`fas ${isDarkMode ? 'fa-sun' : 'fa-moon'}`}></i>
             </button>
-          </div>
-          <div className="keyboard-help">
-            <span className="shortcut-hint"><kbd>⌘/Ctrl</kbd> + <kbd>I</kbd> Theme</span>
-            <span className="shortcut-hint"><kbd>⌘/Ctrl</kbd> + <kbd>N</kbd> New Video</span>
-            <span className="shortcut-hint"><kbd>Esc</kbd> Reset</span>
           </div>
         </div>
       </header>
       
-      <div className="main-content">
+      <div className="app-container">
+        <div className="main-content">
         <p>Upload a selfie and describe what you want to visualize.</p>
 
       {job && job.status !== 'succeeded' && job.status !== 'failed' && (
@@ -282,6 +291,7 @@ function App() {
       {job && job.status === 'failed' && (
         <p className="error-message">{job.error || 'Generation failed'}</p>
       )}
+        </div>
       </div>
     </div>
   )
