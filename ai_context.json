@@ -1,0 +1,34 @@
+{
+  "project": "Manifest AI",
+  "decisions": {
+    "frontend": "React + Vite + TypeScript",
+    "backend": "FastAPI (Python), in-memory for now; SQLite next",
+    "video_duration_mvp_seconds": 4,
+    "target_duration_seconds": [17, 20],
+    "pricing_placeholder": { "per_manifestation_usd": 1 },
+    "provider_mvp": "Replicate (image→video) with MoviePy fallback",
+    "provider_candidates": ["Luma Dream Machine", "Runway Gen-3", "Pika", "Replicate SVD"],
+    "queue_mvp": "FastAPI BackgroundTasks",
+    "queue_future": "Celery + Redis",
+    "storage_future": "S3 + CDN",
+    "payments_future": "Stripe $1 per manifestation",
+    "tti_focus": "Optimize Time-To-Iterate across frontend/backend"
+  },
+  "status": {
+    "backend": "ready",
+    "provider": "replicate_with_fallback",
+    "frontend": "pending"
+  },
+  "next_steps": [
+    "Scaffold React (Vite, TS) in frontend/",
+    "Upload form + polling + playback",
+    "Client/server validation (<=8MB, jpeg/png)",
+    "SQLite persistence",
+    "Provider interface refinement"
+  ],
+  "notes": [
+    "Pick an image→video model on Replicate and set REPLICATE_MODEL",
+    "Use mock video when token is absent for fastest local iteration",
+    "Poll-based status for MVP; consider webhooks later"
+  ]
+}

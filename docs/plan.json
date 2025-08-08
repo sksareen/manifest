@@ -1,0 +1,137 @@
+{
+  "project": {
+    "name": "Manifest AI",
+    "goal": "Users upload a selfie and a goal (prompt); AI generates a short video of them achieving it.",
+    "mvp_video_duration_seconds": 4,
+    "target_video_duration_seconds": [
+      17,
+      20
+    ],
+    "pricing_placeholder": {
+      "per_manifestation_usd": 1
+    }
+  },
+  "stack": {
+    "frontend": {
+      "framework": "React (Vite, TypeScript)",
+      "features": [
+        "Image upload (selfie)",
+        "Text prompt input",
+        "Job creation + polling",
+        "Video playback + download",
+        "Basic error states"
+      ]
+    },
+    "backend": {
+      "language": "Python",
+      "framework": "FastAPI",
+      "storage": "Local disk for MVP; S3-compatible later",
+      "db": "SQLite for MVP; Postgres later",
+      "queue": "FastAPI BackgroundTasks for MVP; Celery/Redis later",
+      "providers": {
+        "selected_for_mvp": "Replicate API (image+prompt\u2192video) with fallback to MoviePy mock",
+        "candidates": [
+          "Luma Dream Machine API (image+prompt to video)",
+          "Runway Gen-3 API (image-to-video)",
+          "Pika API (image-to-video)",
+          "Replicate: Stability SVD image-to-video (lower quality, cheap)",
+          "Self-hosted SVD on GPU (advanced)"
+        ],
+        "env": [
+          "REPLICATE_API_TOKEN",
+          "REPLICATE_MODEL (default: image-to-video model; set per your selection)"
+        ]
+      }
+    }
+  },
+  "api_contract": {
+    "POST /api/generations": {
+      "description": "Create a generation job",
+      "request": "multipart/form-data: file(image), prompt(string)",
+      "response": {
+        "id": "string",
+        "status": "queued|processing|succeeded|failed"
+      }
+    },
+    "GET /api/generations/{id}": {
+      "description": "Fetch job status and metadata",
+      "response": {
+        "id": "string",
+        "status": "queued|processing|succeeded|failed",
+        "prompt": "string",
+        "image_url": "string|null",
+        "video_url": "string|null",
+        "error": "string|null"
+      }
+    },
+    "GET /api/generations/{id}/video": {
+      "description": "Stream or download the final MP4 when ready",
+      "response": "video/mp4"
+    }
+  },
+  "data_model": {
+    "Generation": {
+      "id": "uuid",
+      "prompt": "text",
+      "image_path": "string (local path or S3 key)",
+      "provider_job_id": "string|null",
+      "status": "queued|processing|succeeded|failed",
+      "video_path": "string|null",
+      "error": "text|null",
+      "created_at": "datetime",
+      "updated_at": "datetime"
+    }
+  },
+  "flow": [
+    "User uploads image + prompt",
+    "Backend saves image, creates DB record, enqueues background task",
+    "Background task calls provider (mock for MVP) to generate video",
+    "On success, store video to disk (or S3), update DB",
+    "Frontend polls status; when succeeded, fetches video and renders"
+  ],
+  "security_privacy": [
+    "Limit file types to images (jpeg/png)",
+    "File size cap (e.g., 8 MB MVP)",
+    "Virus scan + content policy (later)",
+    "Signed URLs when moving to S3",
+    "Data retention policy (user deletion later)"
+  ],
+  "future_work": [
+    "Stripe $1 payments per manifestation (credit model)",
+    "Provider abstraction for Luma/Runway/Pika",
+    "Webhook support if provider offers callbacks",
+    "Rate limiting + auth (optional)",
+    "Queue with Celery + Redis",
+    "S3 + CDN for assets",
+    "Prompt safety + NSFW filtering"
+  ],
+  "mvp_tasks": [
+    "Scaffold repo: frontend (Vite) + backend (FastAPI)",
+    "Implement POST /api/generations (upload image + prompt)",
+    "Implement DB (SQLite) + models",
+    "Implement background generation with mock MoviePy provider",
+    "Implement GET /api/generations/{id} + video streaming endpoint",
+    "Implement React UI: upload, prompt, submit, poll, playback",
+    "Basic validation + error display",
+    "CORS + local dev config",
+    "Docs: run instructions and env",
+    "Prepare abstraction layer for switching to real providers"
+  ],
+  "num_mvp_tasks": 10,
+  "status": {
+    "backend": "ready",
+    "provider": "replicate_with_fallback",
+    "frontend": "pending"
+  },
+  "next_steps": [
+    "Scaffold React (Vite, TS) in frontend/",
+    "Upload form: selfie + prompt -> POST /api/generations",
+    "Status polling: GET /api/generations/{id}",
+    "Playback MP4 or external video_url when ready",
+    "Client+server validation (8MB, MIME)"
+  ],
+  "operational_metrics": {
+    "tti_focus": "Optimize Time-To-Iterate: shortest path to user-visible change",
+    "mvp_duration_seconds": 4
+  }
+}
