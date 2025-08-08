@@ -22,9 +22,15 @@ app = FastAPI(title="Manifest AI")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "https://manifest-9c49kfzn7-sksareens-projects.vercel.app",
+        "https://manifest.vercel.app",  # In case you want a custom domain later
+        "https://*.vercel.app",  # All vercel deployments
+    ],
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
 
