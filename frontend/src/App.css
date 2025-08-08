@@ -1,7 +1,7 @@
 #root {
   max-width: 1280px;
   margin: 0 auto;
-  padding: 2rem;
+  padding: 1rem;
   text-align: center;
 }
 
@@ -45,7 +45,96 @@
 .app-container {
   max-width: 720px;
   margin: 0 auto;
-  padding: 24px;
+  padding: 10px;
+}
+
+/* Header */
+.main-header {
+  background: rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: 32px;
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+}
+
+.header-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  position: relative;
+}
+
+.header-logo {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0;
+  background: linear-gradient(135deg, #646cff 0%, #535bf2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.header-buttons {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.new-video-btn,
+.theme-toggle {
+  width: 40px;
+  height: 40px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.new-video-btn:hover:not(:disabled),
+.theme-toggle:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.new-video-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.keyboard-help {
+  position: absolute;
+  bottom: -28px;
+  right: 24px;
+  display: flex;
+  gap: 16px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.shortcut-hint {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.shortcut-hint kbd {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: 11px;
+  font-family: inherit;
+}
+
+.main-content {
+  padding-top: 20px;
 }
 
 /* Upload Form Styles */
@@ -60,6 +149,35 @@
 .error-message {
   color: crimson;
   margin-top: 12px;
+}
+
+/* Status Indicator */
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 24px;
+  background-color: rgba(100, 108, 255, 0.1);
+  border: 1px solid rgba(100, 108, 255, 0.3);
+  border-radius: 8px;
+  margin-bottom: 24px;
+  font-size: 16px;
+  color: #646cff;
+}
+
+/* Spinner */
+.spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(100, 108, 255, 0.2);
+  border-top: 2px solid #646cff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 /* Job Status */

@@ -141,8 +141,43 @@ function App() {
 
   return (
     <div className="app-container">
-      <h1>Manifest AI</h1>
-      <p>Upload a selfie and describe what you want to visualize.</p>
+      <header className="main-header">
+        <div className="header-content">
+          <h1 className="header-logo">Manifest AI</h1>
+          <div className="header-buttons">
+            <button 
+              className="new-video-btn" 
+              onClick={resetForm}
+              aria-label="New video"
+              disabled={!file && !job}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M12 5v14M5 12h14"/>
+              </svg>
+            </button>
+            <button type="button" className="theme-toggle" aria-label="Toggle theme">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+              </svg>
+            </button>
+          </div>
+          <div className="keyboard-help">
+            <span className="shortcut-hint"><kbd>⌘/Ctrl</kbd> + <kbd>I</kbd> Theme</span>
+            <span className="shortcut-hint"><kbd>⌘/Ctrl</kbd> + <kbd>N</kbd> New Video</span>
+            <span className="shortcut-hint"><kbd>Esc</kbd> Reset</span>
+          </div>
+        </div>
+      </header>
+      
+      <div className="main-content">
+        <p>Upload a selfie and describe what you want to visualize.</p>
+
+      {job && job.status !== 'succeeded' && job.status !== 'failed' && (
+        <div className="status-indicator">
+          <div className="spinner"></div>
+          <span>Processing your video...</span>
+        </div>
+      )}
 
       <div className="upload-form">
         <div
@@ -215,38 +250,39 @@ function App() {
           )}
         </div>
         
-        <div className="text-input-container">
-          <input
-            type="text"
-            className="styled-text-input"
-            placeholder="E.g., me surfing a big wave at sunset"
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !submitting) {
-                submit()
-              }
-            }}
-          />
-        </div>
-        
-        <button className="submit-button" onClick={submit} disabled={submitting}>
-          {submitting ? 'Submitting…' : 'Create Video'}
-        </button>
+        {/* Hide form inputs during processing */}
+        {!job || job.status === 'failed' ? (
+          <>
+            <div className="text-input-container">
+              <input
+                type="text"
+                className="styled-text-input"
+                placeholder="E.g., me surfing a big wave at sunset"
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !submitting) {
+                    submit()
+                  }
+                }}
+              />
+            </div>
+            
+            <button className="submit-button" onClick={submit} disabled={submitting}>
+              {submitting ? 'Submitting…' : 'Create Video'}
+            </button>
+          </>
+        ) : null}
       </div>
 
       {error && (
         <p className="error-message">{error}</p>
       )}
 
-      {job && job.status !== 'succeeded' && (
-        <div className="job-status">
-          <h3>Status: {job.status}</h3>
-          {job.status === 'failed' && (
-            <p className="error-message">{job.error || 'Generation failed'}</p>
-          )}
-        </div>
+      {job && job.status === 'failed' && (
+        <p className="error-message">{job.error || 'Generation failed'}</p>
       )}
+      </div>
     </div>
   )
 }

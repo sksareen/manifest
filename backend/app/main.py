@@ -9,6 +9,7 @@ import os
 import shutil
 
 from .services.replicate_provider import ReplicateVideoProvider
+from .prompts import enhance_prompt
 
 APP_DIR = os.path.dirname(os.path.abspath(__file__))
 BASE_DIR = os.path.dirname(APP_DIR)
@@ -77,7 +78,8 @@ async def create_generation(background_tasks: BackgroundTasks, file: UploadFile 
             DB[gen_id].updated_at = datetime.utcnow()
             provider_token = os.getenv("REPLICATE_API_TOKEN")
             provider = ReplicateVideoProvider(api_token=provider_token)
-            video_url = provider.generate(image_path, prompt)
+            enhanced_prompt = enhance_prompt(prompt)
+            video_url = provider.generate(image_path, enhanced_prompt)
             DB[gen_id].status = "succeeded"
             DB[gen_id].video_url = video_url
             DB[gen_id].updated_at = datetime.utcnow()
