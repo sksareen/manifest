@@ -4,19 +4,22 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from typing import Optional
 from uuid import uuid4
-from datetime import datetime
+from datetime import datetime, timedelta
 import os
 import shutil
 
 from .services.replicate_provider import ReplicateVideoProvider
 from .prompts import enhance_prompt
+from .services.video_utils import download_to, extract_last_frame, merge_two_with_xfade
 
 APP_DIR = os.path.dirname(os.path.abspath(__file__))
 BASE_DIR = os.path.dirname(APP_DIR)
 ASSETS_DIR = os.path.join(APP_DIR, "assets")
 UPLOAD_DIR = os.path.join(ASSETS_DIR, "uploads")
+VIDEOS_DIR = os.path.join(ASSETS_DIR, "videos")
 
 os.makedirs(UPLOAD_DIR, exist_ok=True)
+os.makedirs(VIDEOS_DIR, exist_ok=True)
 
 app = FastAPI(title="Manifest AI")
 
@@ -35,9 +38,15 @@ class Generation(BaseModel):
     status: str
     video_path: Optional[str] = None
     video_url: Optional[str] = None
+    final_video_path: Optional[str] = None
+    final_video_url: Optional[str] = None
+    segments: Optional[int] = None
     error: Optional[str] = None
     created_at: datetime
     updated_at: datetime
+    progress_stage: Optional[str] = None
+    estimated_completion: Optional[datetime] = None
+    estimated_remaining_seconds: Optional[int] = None
 
 DB: dict[str, Generation] = {}
 
@@ -51,7 +60,7 @@ def ensure_replicate_env() -> None:
         raise HTTPException(status_code=400, detail="REPLICATE_API_TOKEN is not set on the server")
 
 
-@app.post("/generations")
+@app.post("/api/generations")
 async def create_generation(background_tasks: BackgroundTasks, file: UploadFile = File(...), prompt: str = Form(...)):
     if file.content_type not in ("image/jpeg", "image/png"):
         raise HTTPException(status_code=400, detail="Only JPEG and PNG are supported")
@@ -74,19 +83,79 @@ async def create_generation(background_tasks: BackgroundTasks, file: UploadFile 
 
     def task():
         try:
+            start_time = datetime.utcnow()
+            
+            # Initial setup with ETA
             DB[gen_id].status = "processing"
-            DB[gen_id].updated_at = datetime.utcnow()
+            DB[gen_id].progress_stage = "Initializing video generation..."
+            DB[gen_id].estimated_remaining_seconds = 120  # Initial estimate: 2 minutes
+            DB[gen_id].estimated_completion = start_time + timedelta(seconds=120)
+            DB[gen_id].updated_at = start_time
+            
             provider_token = os.getenv("REPLICATE_API_TOKEN")
-            video_model = os.getenv("REPLICATE_MODEL_VIDEO", "bytedance/seedance-1-lite")
+            video_model = os.getenv("REPLICATE_MODEL_VIDEO", "bytedance/seedance-1-pro")
             provider = ReplicateVideoProvider(api_token=provider_token, model=video_model)
             enhanced_prompt = enhance_prompt(prompt)
-            video_url = provider.generate(image_path, enhanced_prompt)
+
+            fps = int(os.getenv("VIDEO_FPS", "24"))
+            seg_seconds = int(os.getenv("VIDEO_SEGMENT_SECONDS", "10"))
+            xfade_sec = float(os.getenv("CROSSFADE_SECONDS", "0.9"))
+            width = int(os.getenv("VIDEO_WIDTH", "720"))
+
+            work_dir = os.path.join(VIDEOS_DIR, gen_id)
+            os.makedirs(work_dir, exist_ok=True)
+
+            # Segment 1 (seeded by uploaded image) - Usually takes 60-90 seconds
+            DB[gen_id].progress_stage = "Generating first video segment..."
+            DB[gen_id].estimated_remaining_seconds = 100
+            DB[gen_id].estimated_completion = datetime.utcnow() + timedelta(seconds=100)
+            DB[gen_id].updated_at = datetime.utcnow()
+            
+            seg1_url = provider.generate(image_path, enhanced_prompt, extra_inputs={"duration": seg_seconds, "fps": fps})
+            seg1_path = os.path.join(work_dir, "seg1.mp4")
+            download_to(seg1_path, seg1_url)
+
+            # Segment 2 (seeded by last frame of seg1 for continuity) - Usually takes 60-90 seconds
+            DB[gen_id].progress_stage = "Processing frame transition..."
+            DB[gen_id].estimated_remaining_seconds = 75
+            DB[gen_id].estimated_completion = datetime.utcnow() + timedelta(seconds=75)
+            DB[gen_id].updated_at = datetime.utcnow()
+            
+            last_frame_path = os.path.join(work_dir, "seg1_last.jpg")
+            extract_last_frame(seg1_path, last_frame_path)
+            
+            DB[gen_id].progress_stage = "Generating second video segment..."
+            DB[gen_id].estimated_remaining_seconds = 70
+            DB[gen_id].estimated_completion = datetime.utcnow() + timedelta(seconds=70)
+            DB[gen_id].updated_at = datetime.utcnow()
+            
+            seg2_url = provider.generate(last_frame_path, enhanced_prompt, extra_inputs={"duration": seg_seconds, "fps": fps})
+            seg2_path = os.path.join(work_dir, "seg2.mp4")
+            download_to(seg2_path, seg2_url)
+
+            # Merge with crossfade for seamless transition - Usually takes 10-20 seconds
+            DB[gen_id].progress_stage = "Merging video segments..."
+            DB[gen_id].estimated_remaining_seconds = 15
+            DB[gen_id].estimated_completion = datetime.utcnow() + timedelta(seconds=15)
+            DB[gen_id].updated_at = datetime.utcnow()
+            
+            final_path = os.path.join(work_dir, "final.mp4")
+            merge_two_with_xfade(seg1_path, seg2_path, final_path, xfade_sec=xfade_sec, fps=fps, width=width)
+
             DB[gen_id].status = "succeeded"
-            DB[gen_id].video_url = video_url
+            DB[gen_id].progress_stage = "Completed"
+            DB[gen_id].estimated_remaining_seconds = 0
+            DB[gen_id].final_video_path = final_path
+            DB[gen_id].final_video_url = f"/api/generations/{gen_id}/video"
+            # Preserve existing frontend contract
+            DB[gen_id].video_url = DB[gen_id].final_video_url
+            DB[gen_id].segments = 2
             DB[gen_id].updated_at = datetime.utcnow()
         except Exception as e:
             DB[gen_id].status = "failed"
             DB[gen_id].error = str(e)
+            DB[gen_id].progress_stage = "Failed"
+            DB[gen_id].estimated_remaining_seconds = 0
             DB[gen_id].updated_at = datetime.utcnow()
 
     # Fail fast if Replicate is not configured
@@ -96,7 +165,7 @@ async def create_generation(background_tasks: BackgroundTasks, file: UploadFile 
     return {"id": gen_id, "status": generation.status}
 
 
-@app.get("/generations/{gen_id}")
+@app.get("/api/generations/{gen_id}")
 async def get_generation(gen_id: str):
     generation = DB.get(gen_id)
     if not generation:
@@ -115,10 +184,12 @@ async def get_generation(gen_id: str):
         "image_url": image_url,
         "video_url": video_url,
         "error": generation.error,
+        "progress_stage": generation.progress_stage,
+        "estimated_remaining_seconds": generation.estimated_remaining_seconds,
     }
 
 
-@app.get("/generations/{gen_id}/image")
+@app.get("/api/generations/{gen_id}/image")
 async def get_image(gen_id: str):
     generation = DB.get(gen_id)
     if not generation or not os.path.exists(generation.image_path):
@@ -127,7 +198,12 @@ async def get_image(gen_id: str):
     return FileResponse(generation.image_path, media_type=media_type)
 
 
-# No local video endpoint in Replicate-only mode
+@app.get("/api/generations/{gen_id}/video")
+async def get_video(gen_id: str):
+    generation = DB.get(gen_id)
+    if not generation or not generation.final_video_path or not os.path.exists(generation.final_video_path):
+        raise HTTPException(status_code=404, detail="Not found")
+    return FileResponse(generation.final_video_path, media_type="video/mp4")
 
 
 @app.get("/")

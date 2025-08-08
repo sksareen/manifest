@@ -8,6 +8,8 @@ type Job = {
   image_url?: string | null
   video_url?: string | null
   error?: string | null
+  progress_stage?: string | null
+  estimated_remaining_seconds?: number | null
 }
 
 function App() {
@@ -21,6 +23,17 @@ function App() {
   const [isDarkMode, setIsDarkMode] = useState(true)
   const pollRef = useRef<number | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const formatETA = (seconds: number | null | undefined): string => {
+    if (!seconds || seconds <= 0) return ''
+    
+    if (seconds < 60) {
+      return `~${Math.ceil(seconds)} seconds`
+    } else {
+      const minutes = Math.ceil(seconds / 60)
+      return `~${minutes} minute${minutes > 1 ? 's' : ''}`
+    }
+  }
 
   const validateFile = (f: File) => {
     if (!['image/jpeg', 'image/png'].includes(f.type)) {
@@ -197,7 +210,23 @@ function App() {
       {job && job.status !== 'succeeded' && job.status !== 'failed' && (
         <div className="status-indicator">
           <div className="spinner"></div>
-          <span>Processing your video...</span>
+          <div className="status-content">
+            <span className="status-main">
+              {job.progress_stage || 'Processing your video...'}
+            </span>
+            {job.estimated_remaining_seconds && job.estimated_remaining_seconds > 0 && (
+              <span className="status-eta">
+                Estimated time remaining: {formatETA(job.estimated_remaining_seconds)}
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
+      {job && job.status !== 'succeeded' && job.status !== 'failed' && (job.prompt || prompt) && (
+        <div className="prompt-display processing">
+          <div className="prompt-label">Your Prompt:</div>
+          <div className="prompt-text">{job.prompt || prompt}</div>
         </div>
       )}
 
@@ -229,6 +258,12 @@ function App() {
                 src={job.video_url || `/api/generations/${job.id}/video`} 
                 className="video-preview"
               />
+              {job.prompt && (
+                <div className="prompt-display">
+                  <div className="prompt-label">Your Prompt:</div>
+                  <div className="prompt-text">{job.prompt}</div>
+                </div>
+              )}
               <div className="media-actions">
                 <a
                   href={job.video_url || `/api/generations/${job.id}/video`}
