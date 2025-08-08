@@ -1,21 +1,31 @@
+# Python
+*.py[cod]
+*.pyz
+__pycache__/
+*.pyo
+*.pyd
+*.pyw
+backend/app/__pycache__/
+
+# Virtual environments
 .venv/
 */.venv/
-# */.env/
+.env/
+*/.env/
+.venv
+
+# macOS
 .DS_Store
-__pycache__
-*.pyc
-*.pyo
-*.pyd
-*.pyw
-*.pyz
-node_modules
-dist
-build
+
+# Node.js
+node_modules/
+dist/
+build/
+
+# Environment files
 .env
-.DS_Store
-__pycache__
-*.pyc
-*.pyo
-*.pyd
-*.pyw
-*.pyz
+
+# Backend Python cache (explicit, if needed)
+backend/app/__pycache__/
+
+backend/app/assets/uploads/
