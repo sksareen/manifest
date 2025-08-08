@@ -16,21 +16,53 @@ function App() {
   const [job, setJob] = useState<Job | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [dragActive, setDragActive] = useState(false)
   const pollRef = useRef<number | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const validateFile = (f: File) => {
+    if (!['image/jpeg', 'image/png'].includes(f.type)) {
+      setError('Please upload a JPEG or PNG image')
+      return false
+    }
+    if (f.size > 8 * 1024 * 1024) {
+      setError('Please upload an image smaller than 8MB')
+      return false
+    }
+    setError(null)
+    return true
+  }
 
   const onSelectFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0]
     if (!f) return
-    if (!['image/jpeg', 'image/png'].includes(f.type)) {
-      setError('Please upload a JPEG or PNG image')
-      return
+    if (validateFile(f)) {
+      setFile(f)
     }
-    if (f.size > 8 * 1024 * 1024) {
-      setError('Please upload an image smaller than 8MB')
-      return
+  }
+
+  const handleDrag = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (e.type === 'dragenter' || e.type === 'dragover') {
+      setDragActive(true)
+    } else if (e.type === 'dragleave') {
+      setDragActive(false)
     }
-    setError(null)
-    setFile(f)
+  }
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setDragActive(false)
+    const f = e.dataTransfer.files?.[0]
+    if (f && validateFile(f)) {
+      setFile(f)
+    }
+  }
+
+  const handleFileButtonClick = () => {
+    fileInputRef.current?.click()
   }
 
   const submit = async () => {
@@ -83,32 +115,77 @@ function App() {
   }, [job?.id])
 
   return (
-    <div style={{ maxWidth: 720, margin: '0 auto', padding: 24 }}>
+    <div className="app-container">
       <h1>Manifest AI</h1>
       <p>Upload a selfie and describe what you want to visualize.</p>
 
-      <div style={{ display: 'grid', gap: 12 }}>
-        <input type="file" accept="image/jpeg,image/png" onChange={onSelectFile} />
-        <input
-          type="text"
-          placeholder="E.g., me surfing a big wave at sunset"
-          value={prompt}
-          onChange={(e) => setPrompt(e.target.value)}
-        />
-        <button onClick={submit} disabled={submitting}>
+      <div className="upload-form">
+        <div
+          className={`file-drop-zone ${dragActive ? 'drag-active' : ''} ${file ? 'has-file' : ''}`}
+          onDragEnter={handleDrag}
+          onDragLeave={handleDrag}
+          onDragOver={handleDrag}
+          onDrop={handleDrop}
+          onClick={handleFileButtonClick}
+        >
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/png"
+            onChange={onSelectFile}
+            className="hidden-file-input"
+            aria-label="Upload image file"
+            title="Upload an image file (JPEG or PNG, up to 8MB)"
+          />
+          <div className="file-drop-content">
+            {file ? (
+              <>
+                <div className="file-icon">✓</div>
+                <div className="file-name">{file.name}</div>
+                <div className="file-size">{(file.size / 1024 / 1024).toFixed(1)} MB</div>
+                <div className="file-change-text">Click to change file</div>
+              </>
+            ) : (
+              <>
+                <div className="upload-icon">📁</div>
+                <div className="upload-text">
+                  <strong>Choose a file</strong> or drag and drop
+                </div>
+                <div className="upload-subtext">JPEG or PNG, up to 8MB</div>
+              </>
+            )}
+          </div>
+        </div>
+        
+        <div className="text-input-container">
+          <input
+            type="text"
+            className="styled-text-input"
+            placeholder="E.g., me surfing a big wave at sunset"
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !submitting) {
+                submit()
+              }
+            }}
+          />
+        </div>
+        
+        <button className="submit-button" onClick={submit} disabled={submitting}>
           {submitting ? 'Submitting…' : 'Create video'}
         </button>
       </div>
 
       {error && (
-        <p style={{ color: 'crimson', marginTop: 12 }}>{error}</p>
+        <p className="error-message">{error}</p>
       )}
 
       {job && (
-        <div style={{ marginTop: 24 }}>
+        <div className="job-status">
           <h3>Status: {job.status}</h3>
           {job.status === 'succeeded' && (
-            <div style={{ display: 'grid', gap: 12 }}>
+            <div className="video-container">
               {job.video_url?.startsWith('http') ? (
                 <a href={job.video_url} target="_blank" rel="noreferrer">
                   Open video
@@ -126,7 +203,7 @@ function App() {
             </div>
           )}
           {job.status === 'failed' && (
-            <p style={{ color: 'crimson' }}>{job.error || 'Generation failed'}</p>
+            <p className="error-message">{job.error || 'Generation failed'}</p>
           )}
         </div>
       )}

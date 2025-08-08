@@ -40,3 +40,227 @@
 .read-the-docs {
   color: #888;
 }
+
+/* App Container */
+.app-container {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+/* Upload Form Styles */
+.upload-form {
+  display: grid;
+  gap: 20px;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+/* Error Message */
+.error-message {
+  color: crimson;
+  margin-top: 12px;
+}
+
+/* Job Status */
+.job-status {
+  margin-top: 24px;
+}
+
+/* Video Container */
+.video-container {
+  display: grid;
+  gap: 12px;
+}
+
+/* Hidden File Input */
+.hidden-file-input {
+  display: none;
+}
+
+/* File Drop Zone */
+.file-drop-zone {
+  border: 2px dashed #646cff;
+  border-radius: 12px;
+  padding: 40px 20px;
+  text-align: center;
+  background-color: rgba(100, 108, 255, 0.05);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  min-height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.file-drop-zone:hover {
+  border-color: #535bf2;
+  background-color: rgba(100, 108, 255, 0.1);
+  /* transform: translateY(-2px); */
+  box-shadow: 0 4px 12px rgba(100, 108, 255, 0.15);
+}
+
+.file-drop-zone.drag-active {
+  border-color: #535bf2;
+  background-color: rgba(100, 108, 255, 0.15);
+  transform: scale(1.02);
+}
+
+.file-drop-zone.has-file {
+  border-color: #4CAF50;
+  background-color: rgba(76, 175, 80, 0.05);
+}
+
+.file-drop-zone.has-file:hover {
+  border-color: #45a049;
+  background-color: rgba(76, 175, 80, 0.1);
+}
+
+.file-drop-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.upload-icon {
+  font-size: 48px;
+  margin-bottom: 8px;
+  opacity: 0.7;
+}
+
+.file-icon {
+  font-size: 48px;
+  color: #4CAF50;
+  margin-bottom: 8px;
+  font-weight: bold;
+}
+
+.upload-text {
+  font-size: 16px;
+  color: #646cff;
+  margin-bottom: 4px;
+}
+
+.upload-subtext {
+  font-size: 14px;
+  opacity: 0.7;
+}
+
+.file-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #4CAF50;
+  margin-bottom: 4px;
+}
+
+.file-size {
+  font-size: 14px;
+  opacity: 0.7;
+  margin-bottom: 8px;
+}
+
+.file-change-text {
+  font-size: 12px;
+  opacity: 0.6;
+  font-style: italic;
+}
+
+/* Text Input Container */
+.text-input-container {
+  position: relative;
+}
+
+.styled-text-input {
+  width: 100%;
+  padding: 16px 20px;
+  border: 2px solid #ddd;
+  border-radius: 12px;
+  font-size: 16px;
+  font-family: inherit;
+  background-color: transparent;
+  transition: all 0.3s ease;
+  box-sizing: border-box;
+}
+
+.styled-text-input:focus {
+  outline: none;
+  border-color: #646cff;
+  box-shadow: 0 0 0 3px rgba(100, 108, 255, 0.1);
+  /* transform: translateY(-1px); */
+}
+
+.styled-text-input::placeholder {
+  color: #999;
+  font-style: italic;
+}
+
+/* Submit Button */
+.submit-button {
+  padding: 16px 32px;
+  font-size: 16px;
+  font-weight: 600;
+  background: linear-gradient(135deg, #646cff 0%, #535bf2 100%);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(100, 108, 255, 0.2);
+}
+
+.submit-button:hover:not(:disabled) {
+  /* transform: translateY(-2px); */
+  box-shadow: 0 4px 16px rgba(100, 108, 255, 0.3);
+  background: linear-gradient(135deg, #535bf2 0%, #646cff 100%);
+}
+
+.submit-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: 0 2px 8px rgba(100, 108, 255, 0.1);
+}
+
+/* Dark mode adjustments */
+@media (prefers-color-scheme: dark) {
+  .styled-text-input {
+    border-color: #444;
+    color: rgba(255, 255, 255, 0.87);
+  }
+  
+  .styled-text-input:focus {
+    border-color: #646cff;
+  }
+  
+  .file-drop-zone {
+    border-color: #646cff;
+    background-color: rgba(100, 108, 255, 0.08);
+  }
+  
+  .upload-text {
+    color: #646cff;
+  }
+}
+
+/* Light mode adjustments */
+@media (prefers-color-scheme: light) {
+  .styled-text-input {
+    border-color: #ddd;
+    color: #213547;
+  }
+  
+  .styled-text-input:focus {
+    border-color: #646cff;
+  }
+  
+  .file-drop-zone {
+    border-color: #646cff;
+    background-color: rgba(100, 108, 255, 0.05);
+  }
+  
+  .upload-text {
+    color: #646cff;
+  }
+}
