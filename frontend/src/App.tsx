@@ -151,6 +151,19 @@ function App() {
     document.documentElement.setAttribute('data-theme', isDarkMode ? 'dark' : 'light')
   }, [])
 
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'i') {
+        e.preventDefault()
+        toggleTheme()
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [isDarkMode])
+
   return (
     <div data-theme={isDarkMode ? 'dark' : 'light'}>
       <header className="main-header">
@@ -160,10 +173,10 @@ function App() {
             <button 
               className="new-video-btn" 
               onClick={resetForm}
-              aria-label="New video"
+              aria-label="Create new video"
               disabled={!file && !job}
             >
-              <i className="fas fa-plus"></i>
+              New Video
             </button>
             <button 
               type="button" 

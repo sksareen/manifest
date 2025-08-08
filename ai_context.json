@@ -17,14 +17,20 @@
   "status": {
     "backend": "ready",
     "provider": "replicate_with_fallback",
-    "frontend": "pending"
+    "frontend": "completed_mvp"
+  },
+  "ui_features": {
+    "theme_toggle": "Dark/light mode with Cmd+I shortcut",
+    "header": "Fixed global header with Manifest AI branding",
+    "file_upload": "Drag & drop with image preview",
+    "video_generation": "Real-time status with inline preview",
+    "keyboard_shortcuts": ["Cmd+I for theme toggle"]
   },
   "next_steps": [
-    "Scaffold React (Vite, TS) in frontend/",
-    "Upload form + polling + playback",
-    "Client/server validation (<=8MB, jpeg/png)",
     "SQLite persistence",
-    "Provider interface refinement"
+    "Provider interface refinement",
+    "User authentication system",
+    "Payment integration (Stripe)"
   ],
   "notes": [
     "Pick an image→video model on Replicate and set REPLICATE_MODEL",

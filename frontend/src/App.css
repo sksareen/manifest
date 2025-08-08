@@ -66,8 +66,11 @@
   border-bottom: 1px solid var(--border-color);
   -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
-  position: sticky;
+  position: fixed;
   top: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
   z-index: 100;
 }
 
@@ -96,7 +99,23 @@
   align-items: center;
 }
 
-.new-video-btn,
+.new-video-btn {
+  padding: 8px 16px;
+  height: 40px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
 .theme-toggle {
   width: 40px;
   height: 40px;
@@ -129,7 +148,7 @@
 .app-container {
   max-width: 720px;
   margin: 0 auto;
-  padding: 32px 24px;
+  padding: 100px 24px 32px; /* Top padding to account for fixed header */
   color: var(--text-primary);
 }
 
