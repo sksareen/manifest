@@ -5,27 +5,58 @@ __pycache__/
 *.pyo
 *.pyd
 *.pyw
-backend/app/__pycache__/
+*/__pycache__/
+**/__pycache__/
 
 # Virtual environments
 .venv/
-*/.venv/
-.env/
-*/.env/
 .venv
+.env/
+.env
+venv/
+env/
 
 # macOS
 .DS_Store
+**/.DS_Store
 
 # Node.js
 node_modules/
+**/node_modules/
 dist/
 build/
+.next/
+*.tsbuildinfo
 
 # Environment files
 .env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
 
-# Backend Python cache (explicit, if needed)
-backend/app/__pycache__/
+# Backend uploads and assets
+backend/app/assets/uploads/
+backend/app/assets/videos/
+**/uploads/
+**/videos/
 
-backend/app/assets/
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+logs/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Temporary files
+*.tmp
+*.temp
