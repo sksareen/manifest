@@ -167,13 +167,11 @@ function App() {
           {job?.status === 'succeeded' ? (
             <div className="video-preview-content">
               <div className="media-header">Generated Video</div>
-              {job.video_url?.startsWith('http') ? (
-                <a href={job.video_url} target="_blank" rel="noreferrer" className="video-link">
-                  Open video in new tab
-                </a>
-              ) : (
-                <video controls src={job.video_url || `/api/generations/${job.id}/video`} className="video-preview" />
-              )}
+              <video 
+                controls 
+                src={job.video_url || `/api/generations/${job.id}/video`} 
+                className="video-preview"
+              />
               <div className="media-actions">
                 <a
                   href={job.video_url || `/api/generations/${job.id}/video`}
@@ -181,9 +179,9 @@ function App() {
                   download
                   className="download-button"
                 >
-                  Download Video
+                  Download
                 </a>
-                <button onClick={handleFileButtonClick} className="change-image-button">
+                <button onClick={resetForm} className="change-image-button">
                   Create Another Video
                 </button>
               </div>
@@ -233,7 +231,7 @@ function App() {
         </div>
         
         <button className="submit-button" onClick={submit} disabled={submitting}>
-          {submitting ? 'Submitting…' : 'Create video'}
+          {submitting ? 'Submitting…' : 'Create Video'}
         </button>
       </div>
 
