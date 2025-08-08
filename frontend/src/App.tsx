@@ -138,12 +138,12 @@ function App() {
 
       <div className="upload-form">
         <div
-          className={`file-drop-zone ${dragActive ? 'drag-active' : ''} ${file ? 'has-file' : ''}`}
+          className={`media-container ${dragActive ? 'drag-active' : ''} ${file ? 'has-content' : ''} ${job?.status === 'succeeded' ? 'has-video' : ''}`}
           onDragEnter={handleDrag}
           onDragLeave={handleDrag}
           onDragOver={handleDrag}
           onDrop={handleDrop}
-          onClick={handleFileButtonClick}
+          onClick={!job || job.status === 'failed' ? handleFileButtonClick : undefined}
         >
           <input
             ref={fileInputRef}
@@ -154,24 +154,59 @@ function App() {
             aria-label="Upload image file"
             title="Upload an image file (JPEG or PNG, up to 8MB)"
           />
-          <div className="file-drop-content">
-            {file ? (
-              <>
-                <div className="file-icon">✓</div>
-                <div className="file-name">{file.name}</div>
-                <div className="file-size">{(file.size / 1024 / 1024).toFixed(1)} MB</div>
-                <div className="file-change-text">Click to change file</div>
-              </>
-            ) : (
-              <>
-                <div className="upload-icon">📁</div>
-                <div className="upload-text">
-                  <strong>Choose a file</strong> or drag and drop
-                </div>
-                <div className="upload-subtext">JPEG or PNG, up to 8MB</div>
-              </>
-            )}
-          </div>
+          
+          {/* Video Preview (when generation succeeded) */}
+          {job?.status === 'succeeded' ? (
+            <div className="video-preview-content">
+              <div className="media-header">Generated Video</div>
+              {job.video_url?.startsWith('http') ? (
+                <a href={job.video_url} target="_blank" rel="noreferrer" className="video-link">
+                  Open video in new tab
+                </a>
+              ) : (
+                <video controls src={job.video_url || `/api/generations/${job.id}/video`} className="video-preview" />
+              )}
+              <div className="media-actions">
+                <a
+                  href={job.video_url || `/api/generations/${job.id}/video`}
+                  target={job.video_url?.startsWith('http') ? '_blank' : '_self'}
+                  download
+                  className="download-button"
+                >
+                  Download Video
+                </a>
+                <button onClick={handleFileButtonClick} className="change-image-button">
+                  Create Another Video
+                </button>
+              </div>
+            </div>
+          ) : 
+          /* Image Preview (when file is uploaded) */
+          file && previewUrl ? (
+            <div className="image-preview-content">
+              <div className="media-header">Image Preview</div>
+              <img 
+                src={previewUrl} 
+                alt="Selected image preview" 
+                className="image-preview"
+              />
+              <div className="media-actions">
+                <button onClick={handleFileButtonClick} className="change-image-button">
+                  Change Image
+                </button>
+              </div>
+            </div>
+          ) : 
+          /* Upload State (no file) */
+          (
+            <div className="upload-content">
+              <div className="upload-icon">📁</div>
+              <div className="upload-text">
+                <strong>Choose a file</strong> or drag and drop
+              </div>
+              <div className="upload-subtext">JPEG or PNG, up to 8MB</div>
+            </div>
+          )}
         </div>
         
         <div className="text-input-container">
@@ -194,42 +229,13 @@ function App() {
         </button>
       </div>
 
-      {previewUrl && (
-        <div className="image-preview-container">
-          <h3>Image Preview</h3>
-          <img 
-            src={previewUrl} 
-            alt="Selected image preview" 
-            className="image-preview"
-          />
-        </div>
-      )}
-
       {error && (
         <p className="error-message">{error}</p>
       )}
 
-      {job && (
+      {job && job.status !== 'succeeded' && (
         <div className="job-status">
           <h3>Status: {job.status}</h3>
-          {job.status === 'succeeded' && (
-            <div className="video-container">
-              {job.video_url?.startsWith('http') ? (
-                <a href={job.video_url} target="_blank" rel="noreferrer">
-                  Open video
-                </a>
-              ) : (
-                <video controls src={job.video_url || `/api/generations/${job.id}/video`} />
-              )}
-              <a
-                href={job.video_url || `/api/generations/${job.id}/video`}
-                target={job.video_url?.startsWith('http') ? '_blank' : '_self'}
-                download
-              >
-                Download
-              </a>
-            </div>
-          )}
           {job.status === 'failed' && (
             <p className="error-message">{job.error || 'Generation failed'}</p>
           )}

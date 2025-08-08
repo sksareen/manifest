@@ -78,11 +78,11 @@
   display: none;
 }
 
-/* File Drop Zone */
-.file-drop-zone {
+/* Media Container (unified upload/preview/video box) */
+.media-container {
   border: 2px dashed #646cff;
   border-radius: 12px;
-  padding: 40px 20px;
+  padding: 20px;
   text-align: center;
   background-color: rgba(100, 108, 255, 0.05);
   cursor: pointer;
@@ -94,47 +94,65 @@
   justify-content: center;
 }
 
-.file-drop-zone:hover {
+.media-container:hover {
   border-color: #535bf2;
   background-color: rgba(100, 108, 255, 0.1);
-  /* transform: translateY(-2px); */
   box-shadow: 0 4px 12px rgba(100, 108, 255, 0.15);
 }
 
-.file-drop-zone.drag-active {
+.media-container.drag-active {
   border-color: #535bf2;
   background-color: rgba(100, 108, 255, 0.15);
   transform: scale(1.02);
 }
 
-.file-drop-zone.has-file {
+.media-container.has-content {
   border-color: #4CAF50;
   background-color: rgba(76, 175, 80, 0.05);
+  cursor: default;
+  padding: 16px;
 }
 
-.file-drop-zone.has-file:hover {
-  border-color: #45a049;
-  background-color: rgba(76, 175, 80, 0.1);
+.media-container.has-video {
+  border-color: #9c27b0;
+  background-color: rgba(156, 39, 176, 0.05);
 }
 
-.file-drop-content {
+.upload-content {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 8px;
 }
 
+.image-preview-content,
+.video-preview-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+.media-header {
+  font-size: 16px;
+  font-weight: 600;
+  color: #646cff;
+  margin-bottom: 8px;
+}
+
+.media-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 12px;
+}
+
 .upload-icon {
   font-size: 48px;
   margin-bottom: 8px;
   opacity: 0.7;
-}
-
-.file-icon {
-  font-size: 48px;
-  color: #4CAF50;
-  margin-bottom: 8px;
-  font-weight: bold;
 }
 
 .upload-text {
@@ -148,23 +166,66 @@
   opacity: 0.7;
 }
 
-.file-name {
-  font-size: 16px;
+.image-preview {
+  max-width: 100%;
+  max-height: 300px;
+  border-radius: 8px;
+  object-fit: contain;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.video-preview {
+  max-width: 100%;
+  max-height: 300px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.video-link {
+  color: #646cff;
+  text-decoration: none;
   font-weight: 600;
-  color: #4CAF50;
-  margin-bottom: 4px;
+  padding: 12px 24px;
+  border: 2px solid #646cff;
+  border-radius: 8px;
+  transition: all 0.3s ease;
 }
 
-.file-size {
+.video-link:hover {
+  background-color: #646cff;
+  color: white;
+}
+
+.change-image-button {
+  padding: 8px 16px;
   font-size: 14px;
-  opacity: 0.7;
-  margin-bottom: 8px;
+  background-color: transparent;
+  color: #646cff;
+  border: 1px solid #646cff;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
 }
 
-.file-change-text {
-  font-size: 12px;
-  opacity: 0.6;
-  font-style: italic;
+.change-image-button:hover {
+  background-color: #646cff;
+  color: white;
+}
+
+.download-button {
+  padding: 8px 16px;
+  font-size: 14px;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.download-button:hover {
+  background-color: #45a049;
 }
 
 /* Text Input Container */
@@ -210,26 +271,7 @@
   box-shadow: 0 2px 8px rgba(100, 108, 255, 0.2);
 }
 
-/* Image Preview */
-.image-preview-container {
-  margin-top: 24px;
-  text-align: center;
-}
 
-.image-preview-container h3 {
-  margin-bottom: 16px;
-  color: #646cff;
-  font-size: 18px;
-}
-
-.image-preview {
-  max-width: 100%;
-  max-height: 400px;
-  border-radius: 12px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-  border: 2px solid #e0e0e0;
-  object-fit: contain;
-}
 
 .submit-button:hover:not(:disabled) {
   /* transform: translateY(-2px); */
@@ -255,7 +297,7 @@
     border-color: #646cff;
   }
   
-  .file-drop-zone {
+  .media-container {
     border-color: #646cff;
     background-color: rgba(100, 108, 255, 0.08);
   }
@@ -264,11 +306,7 @@
     color: #646cff;
   }
   
-  .image-preview {
-    border-color: #444;
-  }
-  
-  .image-preview-container h3 {
+  .media-header {
     color: rgba(255, 255, 255, 0.87);
   }
 }
@@ -284,7 +322,7 @@
     border-color: #646cff;
   }
   
-  .file-drop-zone {
+  .media-container {
     border-color: #646cff;
     background-color: rgba(100, 108, 255, 0.05);
   }
@@ -293,11 +331,7 @@
     color: #646cff;
   }
   
-  .image-preview {
-    border-color: #e0e0e0;
-  }
-  
-  .image-preview-container h3 {
+  .media-header {
     color: #213547;
   }
 }
