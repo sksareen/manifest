@@ -12,6 +12,7 @@ type Job = {
 
 function App() {
   const [file, setFile] = useState<File | null>(null)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [prompt, setPrompt] = useState('')
   const [job, setJob] = useState<Job | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -33,11 +34,18 @@ function App() {
     return true
   }
 
+  const setFileWithPreview = (f: File) => {
+    setFile(f)
+    // Create preview URL
+    const url = URL.createObjectURL(f)
+    setPreviewUrl(url)
+  }
+
   const onSelectFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0]
     if (!f) return
     if (validateFile(f)) {
-      setFile(f)
+      setFileWithPreview(f)
     }
   }
 
@@ -57,7 +65,7 @@ function App() {
     setDragActive(false)
     const f = e.dataTransfer.files?.[0]
     if (f && validateFile(f)) {
-      setFile(f)
+      setFileWithPreview(f)
     }
   }
 
@@ -113,6 +121,15 @@ function App() {
       if (pollRef.current) window.clearInterval(pollRef.current)
     }
   }, [job?.id])
+
+  // Cleanup preview URL when component unmounts or file changes
+  useEffect(() => {
+    return () => {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl)
+      }
+    }
+  }, [previewUrl])
 
   return (
     <div className="app-container">
@@ -176,6 +193,17 @@ function App() {
           {submitting ? 'Submitting…' : 'Create video'}
         </button>
       </div>
+
+      {previewUrl && (
+        <div className="image-preview-container">
+          <h3>Image Preview</h3>
+          <img 
+            src={previewUrl} 
+            alt="Selected image preview" 
+            className="image-preview"
+          />
+        </div>
+      )}
 
       {error && (
         <p className="error-message">{error}</p>
