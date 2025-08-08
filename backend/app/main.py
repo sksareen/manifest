@@ -22,15 +22,9 @@ app = FastAPI(title="Manifest AI")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        "https://manifest-9c49kfzn7-sksareens-projects.vercel.app",
-        "https://manifest.vercel.app",  # In case you want a custom domain later
-        "https://*.vercel.app",  # All vercel deployments
-    ],
-    allow_credentials=True,
-    allow_methods=["GET", "POST"],
+    allow_origins=["*"],  # Allow all origins for now
+    allow_credentials=False,  # Must be False when allow_origins is "*"
+    allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
 )
 
@@ -57,7 +51,7 @@ def ensure_replicate_env() -> None:
         raise HTTPException(status_code=400, detail="REPLICATE_API_TOKEN is not set on the server")
 
 
-@app.post("/api/generations")
+@app.post("/generations")
 async def create_generation(background_tasks: BackgroundTasks, file: UploadFile = File(...), prompt: str = Form(...)):
     if file.content_type not in ("image/jpeg", "image/png"):
         raise HTTPException(status_code=400, detail="Only JPEG and PNG are supported")
@@ -102,7 +96,7 @@ async def create_generation(background_tasks: BackgroundTasks, file: UploadFile 
     return {"id": gen_id, "status": generation.status}
 
 
-@app.get("/api/generations/{gen_id}")
+@app.get("/generations/{gen_id}")
 async def get_generation(gen_id: str):
     generation = DB.get(gen_id)
     if not generation:
@@ -124,7 +118,7 @@ async def get_generation(gen_id: str):
     }
 
 
-@app.get("/api/generations/{gen_id}/image")
+@app.get("/generations/{gen_id}/image")
 async def get_image(gen_id: str):
     generation = DB.get(gen_id)
     if not generation or not os.path.exists(generation.image_path):
