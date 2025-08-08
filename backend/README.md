@@ -1,10 +1,25 @@
 ### Backend (FastAPI)
 
-Run dev server:
+Quick run options:
 
+- Easiest (reload by default):
+  ```
+  source ../.venv/bin/activate
+  cd backend
+  python main.py
+  ```
+
+- Uvicorn directly:
+  ```
+  source ../.venv/bin/activate
+  cd backend
+  uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+  ```
+
+Env (optional for Replicate):
 ```
-source ../../.venv/bin/activate
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+export REPLICATE_API_TOKEN=... 
+export REPLICATE_MODEL="<image-to-video-model>"
 ```
 
 Test with curl:
