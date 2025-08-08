@@ -28,4 +28,4 @@ build/
 # Backend Python cache (explicit, if needed)
 backend/app/__pycache__/
 
-backend/app/assets/uploads/
+backend/app/assets/
