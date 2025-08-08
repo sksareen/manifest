@@ -73,6 +73,14 @@ function App() {
     fileInputRef.current?.click()
   }
 
+  const resetForm = () => {
+    setFile(null)
+    setPreviewUrl(null)
+    setPrompt('')
+    setJob(null)
+    setError(null)
+  }
+
   const submit = async () => {
     if (!file || !prompt.trim()) {
       setError('Upload a selfie and enter a prompt')
