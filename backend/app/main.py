@@ -99,6 +99,9 @@ async def create_generation(background_tasks: BackgroundTasks, file: UploadFile 
 
             fps = int(os.getenv("VIDEO_FPS", "24"))
             seg_seconds = int(os.getenv("VIDEO_SEGMENT_SECONDS", "10"))
+            # Enforce model-specific allowed durations to avoid 422s
+            if "bytedance/seedance-1-pro" in video_model and seg_seconds not in (5, 10):
+                seg_seconds = 10
             xfade_sec = float(os.getenv("CROSSFADE_SECONDS", "0.9"))
             width = int(os.getenv("VIDEO_WIDTH", "720"))
 
