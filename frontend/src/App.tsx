@@ -239,17 +239,18 @@ function App() {
       </header>
       
       <div className="app-container">
-        {/* Sample Video */}
+
         <div className="sample-showcase">
           <video 
             className="sample-video" 
-            src="https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4" 
-            muted 
+            src="https://www.w3schools.com/html/mov_bbb.mp4"
+            poster="https://peach.blender.org/wp-content/uploads/title_anouncement.jpg?x11217"
+            muted
             playsInline 
             loop 
             autoPlay
           />
-          <div className="sample-caption">Sample: "me achieving my dream of becoming a successful entrepreneur"</div>
+          {/* <div className="sample-caption">Sample: "me as a flower, achieving my dreams"</div> */}
         </div>
 
         <div className="main-content">
