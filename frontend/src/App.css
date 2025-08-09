@@ -614,11 +614,12 @@
 }
 
 .hero-cta {
-  color: var(--text-secondary);
-  font-size: 15px;
+  color: var(--text-primary);
+  font-size: 16px;
   line-height: 1.6;
-  margin-top: 2px;
+  margin-top: 6px;
   text-align: center;
+  font-weight: 500;
 }
 
 .hero-headline {
