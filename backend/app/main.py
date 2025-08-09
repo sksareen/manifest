@@ -1,4 +1,4 @@
-from fastapi import FastAPI, UploadFile, File, Form, BackgroundTasks, HTTPException
+from fastapi import FastAPI, UploadFile, File, Form, BackgroundTasks, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
@@ -7,6 +7,7 @@ from uuid import uuid4
 from datetime import datetime, timedelta
 import os
 import shutil
+import json
 
 from .services.replicate_provider import ReplicateVideoProvider
 from .prompts import enhance_prompt
@@ -49,6 +50,8 @@ class Generation(BaseModel):
     estimated_remaining_seconds: Optional[int] = None
 
 DB: dict[str, Generation] = {}
+PAID_SESSIONS: set[str] = set()
+CONSUMED_SESSIONS: set[str] = set()
 
 
 def save_upload(file: UploadFile, dest_path: str) -> None:
@@ -61,7 +64,12 @@ def ensure_replicate_env() -> None:
 
 
 @app.post("/api/generations")
-async def create_generation(background_tasks: BackgroundTasks, file: UploadFile = File(...), prompt: str = Form(...)):
+async def create_generation(
+    background_tasks: BackgroundTasks,
+    file: UploadFile = File(...),
+    prompt: str = Form(...),
+    session_id: Optional[str] = Form(None),
+):
     if file.content_type not in ("image/jpeg", "image/png"):
         raise HTTPException(status_code=400, detail="Only JPEG and PNG are supported")
 
@@ -70,6 +78,31 @@ async def create_generation(background_tasks: BackgroundTasks, file: UploadFile 
     image_path = os.path.join(UPLOAD_DIR, f"{gen_id}{image_ext}")
 
     save_upload(file, image_path)
+
+    # Optional Stripe enforcement
+    stripe_enforce = os.getenv("STRIPE_ENFORCE", "0") not in ("0", "false", "False", None)
+    if stripe_enforce:
+        if not session_id:
+            raise HTTPException(status_code=402, detail="Payment required: missing session_id")
+        if session_id in CONSUMED_SESSIONS:
+            raise HTTPException(status_code=402, detail="Payment session already used")
+        if session_id not in PAID_SESSIONS:
+            # Best-effort live verify via Stripe if configured
+            try:
+                import stripe
+                sk = os.getenv("STRIPE_SECRET_KEY")
+                if not sk:
+                    raise HTTPException(status_code=500, detail="Stripe not configured on server")
+                stripe.api_key = sk
+                sess = stripe.checkout.Session.retrieve(session_id)
+                if sess and sess.get("payment_status") == "paid":
+                    PAID_SESSIONS.add(session_id)
+                else:
+                    raise HTTPException(status_code=402, detail="Payment not completed")
+            except HTTPException:
+                raise
+            except Exception:
+                raise HTTPException(status_code=402, detail="Payment not verified")
 
     generation = Generation(
         id=gen_id,
@@ -154,6 +187,10 @@ async def create_generation(background_tasks: BackgroundTasks, file: UploadFile 
             DB[gen_id].video_url = DB[gen_id].final_video_url
             DB[gen_id].segments = 2
             DB[gen_id].updated_at = datetime.utcnow()
+
+            # Mark session consumed if enforced
+            if stripe_enforce and session_id:
+                CONSUMED_SESSIONS.add(session_id)
         except Exception as e:
             DB[gen_id].status = "failed"
             DB[gen_id].error = str(e)
@@ -212,3 +249,57 @@ async def get_video(gen_id: str):
 @app.get("/")
 async def root():
     return {"ok": True}
+
+
+# -------- Stripe minimal API --------
+
+def _public_site_url() -> str:
+    return os.getenv("PUBLIC_SITE_URL", "http://localhost:5173")
+
+
+@app.post("/api/payments/create-session")
+async def create_checkout_session(request: Request):
+    try:
+        import stripe
+    except Exception:
+        raise HTTPException(status_code=500, detail="Stripe SDK not installed")
+
+    sk = os.getenv("STRIPE_SECRET_KEY")
+    price_id = os.getenv("STRIPE_PRICE_ID")
+    site = _public_site_url().rstrip("/")
+    if not sk or not price_id:
+        raise HTTPException(status_code=500, detail="Stripe not configured on server")
+
+    stripe.api_key = sk
+    try:
+        session = stripe.checkout.Session.create(
+            mode="payment",
+            line_items=[{"price": price_id, "quantity": 1}],
+            success_url=f"{site}/?checkout=success&session_id={{CHECKOUT_SESSION_ID}}",
+            cancel_url=f"{site}/?checkout=cancelled",
+            automatic_tax={"enabled": False},
+        )
+        return {"url": session.url}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Stripe error: {e}")
+
+
+@app.post("/api/payments/webhook")
+async def stripe_webhook(request: Request):
+    payload = await request.body()
+    sig_header = request.headers.get("stripe-signature")
+    secret = os.getenv("STRIPE_WEBHOOK_SECRET")
+    if not secret:
+        raise HTTPException(status_code=500, detail="Stripe webhook not configured")
+    try:
+        import stripe
+        event = stripe.Webhook.construct_event(payload, sig_header, secret)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Webhook signature verification failed: {e}")
+
+    if event["type"] == "checkout.session.completed":
+        session = event["data"]["object"]
+        sid = session.get("id")
+        if sid:
+            PAID_SESSIONS.add(sid)
+    return {"received": True}
