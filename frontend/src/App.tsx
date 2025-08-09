@@ -12,6 +12,8 @@ type Job = {
   estimated_remaining_seconds?: number | null
 }
 
+
+
 function App() {
   const [file, setFile] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
@@ -24,6 +26,7 @@ function App() {
   const [paidSessionId, setPaidSessionId] = useState<string | null>(null)
   const pollRef = useRef<number | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const formRef = useRef<HTMLDivElement>(null)
 
   const formatETA = (seconds: number | null | undefined): string => {
     if (!seconds || seconds <= 0) return ''
@@ -207,14 +210,15 @@ function App() {
         <div className="header-content">
           <h1 className="header-logo">Manifest AI</h1>
           <div className="header-buttons">
-            <button 
-              className="new-video-btn" 
-              onClick={resetForm}
-              aria-label="Create new video"
-              disabled={!file && !job}
-            >
-              New Video
-            </button>
+            {(file || job) && (
+              <button
+                className="new-video-btn"
+                onClick={resetForm}
+                aria-label="Create new video"
+              >
+                New Video
+              </button>
+            )}
             <button 
               type="button" 
               className="theme-toggle" 
@@ -228,6 +232,24 @@ function App() {
       </header>
       
       <div className="app-container">
+        {/* Hero */}
+        <section className="hero">
+          <div className="hero-headline">Manifest your dreams into reality</div>
+          <div className="hero-subheadline">Upload a selfie and visualize your goals coming true</div>
+          
+          <div className="sample-showcase">
+            <video 
+              className="sample-video" 
+              src="https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4" 
+              muted 
+              playsInline 
+              loop 
+              autoPlay
+            />
+            <div className="sample-caption">Sample: "me achieving my dream of becoming a successful entrepreneur"</div>
+          </div>
+        </section>
+
         <div className="main-content">
         <p>Upload a selfie and describe what you want to visualize.</p>
 
@@ -254,7 +276,7 @@ function App() {
         </div>
       )}
 
-      <div className="upload-form">
+      <div className="upload-form" ref={formRef}>
         <div
           className={`media-container ${dragActive ? 'drag-active' : ''} ${file ? 'has-content' : ''} ${job?.status === 'succeeded' ? 'has-video' : ''}`}
           onDragEnter={handleDrag}
@@ -348,19 +370,30 @@ function App() {
                 }}
               />
             </div>
+            <div className="prompt-chips">
+              {[
+                'me confidently giving a keynote speech to thousands', 
+                'me in my dream home, successful and peaceful', 
+                'me crossing the finish line of my first marathon'
+              ].map((text, idx) => (
+                <button key={idx} className="chip" onClick={() => setPrompt(text)}>
+                  {text}
+                </button>
+              ))}
+            </div>
             <div className="actions-row">
-              <button className="submit-button" onClick={() => submitGeneration('preview')} disabled={submitting}>
-                {submitting ? 'Submitting…' : 'Preview Free (3s)'}
-              </button>
               {paidSessionId ? (
-                <button className="submit-button" onClick={() => submitGeneration('full', paidSessionId)} disabled={submitting}>
-                  {submitting ? 'Submitting…' : 'Generate 20s (Paid)'}
+                <button className="submit-button primary manifest-cta" onClick={() => submitGeneration('full', paidSessionId)} disabled={submitting}>
+                  {submitting ? 'Manifesting…' : '✨ Manifest Full Dreams (20s HD)'}
                 </button>
               ) : (
-                <button className="submit-button" onClick={createCheckout} disabled={submitting}>
-                  Buy 20s HD
+                <button className="submit-button primary manifest-cta" onClick={createCheckout} disabled={submitting}>
+                  ✨ Manifest Full Dreams (20s HD)
                 </button>
               )}
+              <button className="submit-button secondary preview-btn" onClick={() => submitGeneration('preview')} disabled={submitting}>
+                {submitting ? 'Loading…' : 'Quick Preview (3s)'}
+              </button>
             </div>
           </>
         ) : null}
@@ -375,6 +408,8 @@ function App() {
       )}
         </div>
       </div>
+
+
     </div>
   )
 }
