@@ -25,6 +25,7 @@ function App() {
   const [dragActive, setDragActive] = useState(false)
   const [isDarkMode, setIsDarkMode] = useState(true)
   const [paidSessionId, setPaidSessionId] = useState<string | null>(null)
+  const [showVideo, setShowVideo] = useState<boolean>(false)
   const pollRef = useRef<number | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const formRef = useRef<HTMLDivElement>(null)
@@ -240,7 +241,7 @@ function App() {
       
       <div className="app-container">
 
-        <div className="sample-showcase">
+        {/* <div className="sample-showcase">
           <video 
             className="sample-video" 
             src="https://www.w3schools.com/html/mov_bbb.mp4"
@@ -250,7 +251,40 @@ function App() {
             loop 
             autoPlay
           />
-          {/* <div className="sample-caption">Sample: "me as a flower, achieving my dreams"</div> */}
+          <div className="sample-caption">Sample: "me as a flower, achieving my dreams"</div>
+        </div> */}
+
+        <div className="hero">
+          <div className="video-embed" aria-label="Featured video: Abraham Hicks on 17 seconds">
+            {showVideo ? (
+              <iframe
+                src="https://www.youtube.com/embed/fxhz_iQ2Mpw"
+                title="Abraham Hicks - 17 Seconds"
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+              />
+            ) : (
+              <button
+                type="button"
+                className="video-placeholder"
+                onClick={() => setShowVideo(true)}
+                aria-label="Play video"
+              >
+                <img
+                  src="https://img.youtube.com/vi/fxhz_iQ2Mpw/hqdefault.jpg"
+                  alt="Abraham Hicks - 17 Seconds"
+                />
+                <span className="play-icon" aria-hidden="true">▶</span>
+              </button>
+            )}
+          </div>
+          <p className="hero-quote">
+            "If you hold a thought for 17 seconds, you can manifest it." — Abraham Hicks
+          </p>
+          <p className="hero-cta">
+            Upload any selfie and Manifest anything you want with the 20-second video you keep forever.
+          </p>
         </div>
 
         <div className="main-content">
