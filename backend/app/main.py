@@ -8,10 +8,11 @@ from datetime import datetime, timedelta
 import os
 import shutil
 import json
+from dotenv import load_dotenv
 
 from .services.replicate_provider import ReplicateVideoProvider
 from .prompts import enhance_prompt
-from .services.video_utils import download_to, extract_last_frame, merge_two_with_xfade
+from .services.video_utils import download_to, extract_last_frame, merge_two_with_xfade, trim_video
 
 APP_DIR = os.path.dirname(os.path.abspath(__file__))
 BASE_DIR = os.path.dirname(APP_DIR)
@@ -23,6 +24,9 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 os.makedirs(VIDEOS_DIR, exist_ok=True)
 
 app = FastAPI(title="Manifest AI")
+
+# Load environment from .env for local/dev runs (production uses platform secrets)
+load_dotenv()
 
 app.add_middleware(
     CORSMiddleware,
@@ -69,6 +73,7 @@ async def create_generation(
     file: UploadFile = File(...),
     prompt: str = Form(...),
     session_id: Optional[str] = Form(None),
+    mode: Optional[str] = Form("preview"),  # 'preview' | 'full'
 ):
     if file.content_type not in ("image/jpeg", "image/png"):
         raise HTTPException(status_code=400, detail="Only JPEG and PNG are supported")
@@ -81,7 +86,7 @@ async def create_generation(
 
     # Optional Stripe enforcement
     stripe_enforce = os.getenv("STRIPE_ENFORCE", "0") not in ("0", "false", "False", None)
-    if stripe_enforce:
+    if stripe_enforce and mode == "full":
         if not session_id:
             raise HTTPException(status_code=402, detail="Payment required: missing session_id")
         if session_id in CONSUMED_SESSIONS:
@@ -126,12 +131,18 @@ async def create_generation(
             DB[gen_id].updated_at = start_time
             
             provider_token = os.getenv("REPLICATE_API_TOKEN")
-            video_model = os.getenv("REPLICATE_MODEL_VIDEO", "bytedance/seedance-1-pro")
+            video_model = (
+                os.getenv("REPLICATE_MODEL_VIDEO_PREVIEW", "bytedance/seedance-1-lite")
+                if mode == "preview"
+                else os.getenv("REPLICATE_MODEL_VIDEO", "bytedance/seedance-1-pro")
+            )
             provider = ReplicateVideoProvider(api_token=provider_token, model=video_model)
             enhanced_prompt = enhance_prompt(prompt)
 
             fps = int(os.getenv("VIDEO_FPS", "24"))
-            seg_seconds = int(os.getenv("VIDEO_SEGMENT_SECONDS", "10"))
+            seg_seconds = (
+                5 if mode == "preview" else int(os.getenv("VIDEO_SEGMENT_SECONDS", "10"))
+            )
             # Enforce model-specific allowed durations to avoid 422s
             if "bytedance/seedance-1-pro" in video_model and seg_seconds not in (5, 10):
                 seg_seconds = 10
@@ -141,7 +152,7 @@ async def create_generation(
             work_dir = os.path.join(VIDEOS_DIR, gen_id)
             os.makedirs(work_dir, exist_ok=True)
 
-            # Segment 1 (seeded by uploaded image) - Usually takes 60-90 seconds
+            # Segment 1 (seeded by uploaded image) - duration depends on mode
             DB[gen_id].progress_stage = "Generating first video segment..."
             DB[gen_id].estimated_remaining_seconds = 100
             DB[gen_id].estimated_completion = datetime.utcnow() + timedelta(seconds=100)
@@ -151,7 +162,24 @@ async def create_generation(
             seg1_path = os.path.join(work_dir, "seg1.mp4")
             download_to(seg1_path, seg1_url)
 
-            # Segment 2 (seeded by last frame of seg1 for continuity) - Usually takes 60-90 seconds
+            # If preview mode: return a 3s trimmed clip
+            if mode == "preview":
+                preview_seconds = float(os.getenv("PREVIEW_SECONDS", "3"))
+                preview_width = int(os.getenv("PREVIEW_WIDTH", "480"))
+                final_path = os.path.join(work_dir, "preview.mp4")
+                trim_video(seg1_path, final_path, duration_seconds=preview_seconds, fps=fps, width=preview_width)
+
+                DB[gen_id].status = "succeeded"
+                DB[gen_id].progress_stage = "Preview ready"
+                DB[gen_id].estimated_remaining_seconds = 0
+                DB[gen_id].final_video_path = final_path
+                DB[gen_id].final_video_url = f"/api/generations/{gen_id}/video"
+                DB[gen_id].video_url = DB[gen_id].final_video_url
+                DB[gen_id].segments = 1
+                DB[gen_id].updated_at = datetime.utcnow()
+                return
+
+            # Segment 2 (seeded by last frame of seg1 for continuity)
             DB[gen_id].progress_stage = "Processing frame transition..."
             DB[gen_id].estimated_remaining_seconds = 75
             DB[gen_id].estimated_completion = datetime.utcnow() + timedelta(seconds=75)
@@ -267,14 +295,31 @@ async def create_checkout_session(request: Request):
     sk = os.getenv("STRIPE_SECRET_KEY")
     price_id = os.getenv("STRIPE_PRICE_ID")
     site = _public_site_url().rstrip("/")
-    if not sk or not price_id:
+    if not sk:
         raise HTTPException(status_code=500, detail="Stripe not configured on server")
 
     stripe.api_key = sk
     try:
+        line_items = None
+        if price_id:
+            line_items = [{"price": price_id, "quantity": 1}]
+        else:
+            # Fallback: inline price using amount + currency + product name
+            amount_cents = int(os.getenv("STRIPE_AMOUNT_CENTS", "999"))
+            currency = os.getenv("STRIPE_CURRENCY", "usd")
+            product_name = os.getenv("STRIPE_PRODUCT_NAME", "20s HD Video")
+            line_items = [{
+                "price_data": {
+                    "currency": currency,
+                    "unit_amount": amount_cents,
+                    "product_data": {"name": product_name},
+                },
+                "quantity": 1,
+            }]
+
         session = stripe.checkout.Session.create(
             mode="payment",
-            line_items=[{"price": price_id, "quantity": 1}],
+            line_items=line_items,
             success_url=f"{site}/?checkout=success&session_id={{CHECKOUT_SESSION_ID}}",
             cancel_url=f"{site}/?checkout=cancelled",
             automatic_tax={"enabled": False},

@@ -41,6 +41,29 @@ def _probe_duration(path: str) -> float:
     return float(json.loads(r.stdout)["format"]["duration"])
 
 
+def trim_video(input_path: str, output_path: str, duration_seconds: float, fps: int = 24, width: Optional[int] = None) -> str:
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    vf_chain = []
+    if width:
+        vf_chain.append(f"scale={width}:-2")
+    vf_chain.append("format=yuv420p")
+    vf = ",".join(vf_chain) if vf_chain else "null"
+    cmd = [
+        "ffmpeg", "-y",
+        "-i", input_path,
+        "-t", str(duration_seconds),
+        "-filter:v", vf,
+        "-r", str(fps),
+        "-c:v", "libx264", "-preset", "veryfast", "-crf", "18",
+        "-pix_fmt", "yuv420p",
+        "-an",
+        "-movflags", "+faststart",
+        output_path,
+    ]
+    subprocess.run(cmd, check=True)
+    return output_path
+
+
 def _normalize_video(input_path: str, output_path: str, fps: int, width: Optional[int]) -> str:
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     vf_chain = []

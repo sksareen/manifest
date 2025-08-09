@@ -21,6 +21,7 @@ function App() {
   const [submitting, setSubmitting] = useState(false)
   const [dragActive, setDragActive] = useState(false)
   const [isDarkMode, setIsDarkMode] = useState(true)
+  const [paidSessionId, setPaidSessionId] = useState<string | null>(null)
   const pollRef = useRef<number | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -101,7 +102,7 @@ function App() {
     document.documentElement.setAttribute('data-theme', newMode ? 'dark' : 'light')
   }
 
-  const submit = async () => {
+  const submitGeneration = async (mode: 'preview' | 'full', sessionId?: string) => {
     if (!file || !prompt.trim()) {
       setError('Upload a selfie and enter a prompt')
       return
@@ -112,6 +113,8 @@ function App() {
       const form = new FormData()
       form.append('file', file)
       form.append('prompt', prompt)
+      form.append('mode', mode)
+      if (sessionId) form.append('session_id', sessionId)
       const res = await fetch('/api/generations', { method: 'POST', body: form })
       if (!res.ok) throw new Error(await res.text())
       const data = (await res.json()) as { id: string; status: Job['status'] }
@@ -120,6 +123,17 @@ function App() {
       setError(e?.message || 'Failed to create job')
     } finally {
       setSubmitting(false)
+    }
+  }
+
+  const createCheckout = async () => {
+    try {
+      const res = await fetch('/api/payments/create-session', { method: 'POST' })
+      if (!res.ok) throw new Error(await res.text())
+      const data = (await res.json()) as { url: string }
+      window.location.href = data.url
+    } catch (e: any) {
+      setError(e?.message || 'Failed to start checkout')
     }
   }
 
@@ -162,6 +176,16 @@ function App() {
   // Initialize theme
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', isDarkMode ? 'dark' : 'light')
+  }, [])
+
+  // Capture Stripe success URL session_id
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const sessionId = params.get('session_id')
+    const checkout = params.get('checkout')
+    if (checkout === 'success' && sessionId) {
+      setPaidSessionId(sessionId)
+    }
   }, [])
 
   // Keyboard shortcuts
@@ -319,15 +343,25 @@ function App() {
                 onChange={(e) => setPrompt(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !submitting) {
-                    submit()
+                    submitGeneration('preview')
                   }
                 }}
               />
             </div>
-            
-            <button className="submit-button" onClick={submit} disabled={submitting}>
-              {submitting ? 'Submitting…' : 'Create Video'}
-            </button>
+            <div className="actions-row">
+              <button className="submit-button" onClick={() => submitGeneration('preview')} disabled={submitting}>
+                {submitting ? 'Submitting…' : 'Preview Free (3s)'}
+              </button>
+              {paidSessionId ? (
+                <button className="submit-button" onClick={() => submitGeneration('full', paidSessionId)} disabled={submitting}>
+                  {submitting ? 'Submitting…' : 'Generate 20s (Paid)'}
+                </button>
+              ) : (
+                <button className="submit-button" onClick={createCheckout} disabled={submitting}>
+                  Buy 20s HD
+                </button>
+              )}
+            </div>
           </>
         ) : null}
       </div>
