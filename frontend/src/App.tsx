@@ -251,7 +251,6 @@ function App() {
         </section>
 
         <div className="main-content">
-        <p>Upload a selfie and describe what you want to visualize.</p>
 
       {job && job.status !== 'succeeded' && job.status !== 'failed' && (
         <div className="status-indicator">
