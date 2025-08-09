@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import './App.css'
+import { posthog } from './analytics'
 
 type Job = {
   id: string
@@ -88,6 +89,7 @@ function App() {
   }
 
   const handleFileButtonClick = () => {
+    posthog.capture('click_choose_file')
     fileInputRef.current?.click()
   }
 
@@ -110,6 +112,7 @@ function App() {
       setError('Upload a selfie and enter a prompt')
       return
     }
+    posthog.capture('submit_generation', { mode, has_session: Boolean(sessionId) })
     setSubmitting(true)
     setError(null)
     try {
@@ -130,6 +133,7 @@ function App() {
   }
 
   const createCheckout = async () => {
+    posthog.capture('click_manifest_full_dreams')
     try {
       const res = await fetch('/api/payments/create-session', { method: 'POST' })
       if (!res.ok) throw new Error(await res.text())
