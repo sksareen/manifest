@@ -208,7 +208,10 @@ function App() {
     <div data-theme={isDarkMode ? 'dark' : 'light'}>
       <header className="main-header">
         <div className="header-content">
-          <h1 className="header-logo">Manifest AI</h1>
+          <div className="header-text">
+            <h1 className="header-logo">Manifest AI</h1>
+            <p className="header-subtitle">Upload a selfie and visualize your goals coming true</p>
+          </div>
           <div className="header-buttons">
             {(file || job) && (
               <button
@@ -232,23 +235,18 @@ function App() {
       </header>
       
       <div className="app-container">
-        {/* Hero */}
-        <section className="hero">
-          <div className="hero-headline">Manifest your dreams into reality</div>
-          <div className="hero-subheadline">Upload a selfie and visualize your goals coming true</div>
-          
-          <div className="sample-showcase">
-            <video 
-              className="sample-video" 
-              src="https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4" 
-              muted 
-              playsInline 
-              loop 
-              autoPlay
-            />
-            <div className="sample-caption">Sample: "me achieving my dream of becoming a successful entrepreneur"</div>
-          </div>
-        </section>
+        {/* Sample Video */}
+        <div className="sample-showcase">
+          <video 
+            className="sample-video" 
+            src="https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4" 
+            muted 
+            playsInline 
+            loop 
+            autoPlay
+          />
+          <div className="sample-caption">Sample: "me achieving my dream of becoming a successful entrepreneur"</div>
+        </div>
 
         <div className="main-content">
 
