@@ -300,11 +300,43 @@ async def create_checkout_session(request: Request):
 
     stripe.api_key = sk
     try:
-        line_items = None
+        # Resolve price by lookup key if provided
+        if not price_id:
+            lookup_key = os.getenv("STRIPE_PRICE_LOOKUP_KEY")
+            if lookup_key:
+                pr = stripe.Price.list(lookup_keys=[lookup_key], active=True, limit=1)
+                if pr and pr.data:
+                    price_id = pr.data[0].id
+
+        # Resolve price via product id if provided
+        if not price_id:
+            product_id = os.getenv("STRIPE_PRODUCT_ID")
+            if product_id:
+                try:
+                    product = stripe.Product.retrieve(product_id, expand=["default_price"])
+                    dp = product.get("default_price")
+                    if isinstance(dp, dict) and dp.get("id"):
+                        price_id = dp["id"]
+                    elif isinstance(dp, str):
+                        price_id = dp
+                except Exception:
+                    price_id = None
+                if not price_id:
+                    prices = stripe.Price.list(product=product_id, active=True, limit=1)
+                    if prices and prices.data:
+                        price_id = prices.data[0].id
+                if not price_id:
+                    # Create a one-off price for this product using fallback amount
+                    amount_cents = int(os.getenv("STRIPE_AMOUNT_CENTS", "999"))
+                    currency = os.getenv("STRIPE_CURRENCY", "usd")
+                    created = stripe.Price.create(unit_amount=amount_cents, currency=currency, product=product_id)
+                    price_id = created.id
+
+        # Build line items
         if price_id:
             line_items = [{"price": price_id, "quantity": 1}]
         else:
-            # Fallback: inline price using amount + currency + product name
+            # Fallback inline price
             amount_cents = int(os.getenv("STRIPE_AMOUNT_CENTS", "999"))
             currency = os.getenv("STRIPE_CURRENCY", "usd")
             product_name = os.getenv("STRIPE_PRODUCT_NAME", "20s HD Video")
